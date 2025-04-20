@@ -80,6 +80,10 @@ while running:
     current_time = time.time()
     if current_time - last_life_update >= 1:
         life_energy = hunger
+        if mood >= 70 and life_energy < 30:
+            life_energy = 30
+        if mood < 30 and life_energy > 70:
+            life_energy = 70
         last_life_update = current_time
 
     draw_slider(SLIDER_X, LIFE_Y, life_energy, "Жизненная энергия")
