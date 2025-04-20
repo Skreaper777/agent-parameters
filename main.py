@@ -6,7 +6,7 @@ import time
 pygame.init()
 
 # Параметры экрана
-WIDTH, HEIGHT = 1800, 600
+WIDTH, HEIGHT = 1600, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Симуляция агентов")
 
@@ -21,7 +21,7 @@ WHITE = (255, 255, 255)
 # Настройки бегунков
 SLIDER_WIDTH = 300
 SLIDER_HEIGHT = 20
-SLIDER_X = (WIDTH - SLIDER_WIDTH) // 2 - 100
+SLIDER_X = 20
 LIFE_Y = HEIGHT // 2 - 80
 HUNGER_Y = HEIGHT // 2 - 20
 MOOD_Y = HEIGHT // 2 + 40
@@ -29,8 +29,8 @@ MOOD_Y = HEIGHT // 2 + 40
 # Настройки области мыслей агента
 THOUGHT_BOX_X = SLIDER_X + SLIDER_WIDTH + 50
 THOUGHT_BOX_Y = LIFE_Y - 60
-THOUGHT_BOX_WIDTH = 800
-THOUGHT_BOX_HEIGHT = 150
+THOUGHT_BOX_WIDTH = 1100
+THOUGHT_BOX_HEIGHT = 300
 
 # Начальные значения
 life_energy = 100
@@ -42,6 +42,7 @@ last_life_update = time.time()
 
 font = pygame.font.SysFont(None, 24)
 
+
 def draw_slider(x, y, value, name):
     pygame.draw.rect(screen, GRAY, (x, y, SLIDER_WIDTH, SLIDER_HEIGHT))
     fill_width = int(SLIDER_WIDTH * (value / 100))
@@ -49,15 +50,23 @@ def draw_slider(x, y, value, name):
     label = font.render(f"{name}: {int(value)}", True, WHITE)
     screen.blit(label, (x, y - 25))
 
+
 def get_thought(energy, hunger, mood, base_energy, applied_rules):
-    lines = [f"Сытность: {int(hunger)}, Настроение: {int(mood)}"]
-    lines.append(f"Базовая жизненная энергия = сытность = {int(base_energy)}")
+    lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
+    lines.append("")
+    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, а настроение — {int(mood)}.")
+    lines.append("")
+    lines.append(f"    По умолчанию я рассчитываю свою жизненную энергию как {int(base_energy)} (на основе сытности).")
 
-    for rule in applied_rules:
-        lines.append(rule)
+    if applied_rules:
+        lines.append("    Однако...")
+        for rule in applied_rules:
+            lines.append("    " + rule)
+    else:
+        lines.append("    Никакие дополнительные ограничения не применялись.")
 
-    lines.append(f"Фактическое значение жизненной энергии: {int(energy)}")
     return "\n".join(lines)
+
 
 running = True
 clock = pygame.time.Clock()
@@ -84,11 +93,11 @@ while running:
         life_energy = base_energy
 
         if mood >= 70 and life_energy < 30:
-            applied_rules.append("Настроение ≥ 70: не позволяю опуститься ниже 30 → устанавливаю 30")
+            applied_rules.append("Настроение отличное (≥ 70), и я не позволяю себе опуститься ниже 30 — поэтому поднимаю энергию до 30.")
             life_energy = 30
 
         if mood < 30 and life_energy > 70:
-            applied_rules.append("Настроение < 30: не позволяю подняться выше 70 → ограничиваю 70")
+            applied_rules.append("Настроение плохое (< 30), и я не ощущаю подъёма — поэтому ограничиваю энергию сверху до 70.")
             life_energy = 70
 
         last_life_update = current_time
