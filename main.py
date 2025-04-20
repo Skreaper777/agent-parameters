@@ -1,3 +1,6 @@
+import os
+os.environ['SDL_VIDEO_WINDOW_POS'] = "1800,100"  # X=1600, Y=100 — правый край большого экрана
+
 import pygame
 import sys
 import time
@@ -40,6 +43,7 @@ mood = 100
 tiredness = 100
 base_energy = hunger
 applied_rules = []
+suggestion = ""
 last_life_update = time.time()
 
 font = pygame.font.SysFont(None, 24)
@@ -53,7 +57,7 @@ def draw_slider(x, y, value, name):
     screen.blit(label, (x, y - 25))
 
 
-def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules):
+def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
     lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
     lines.append("")
     lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, настроение — {int(mood)}, усталость — {int(tiredness)}.")
@@ -64,8 +68,30 @@ def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules):
         lines.append("    Однако...")
         for rule in applied_rules:
             lines.append("    " + rule)
+        if suggestion:
+            lines.append("")
+            lines.append("    Что мне делать? Надо...")
+            lines.append("    " + suggestion)
     else:
-        lines.append("    Никакие дополнительные ограничения не применялись.")
+        if energy < 70 and (mood < 70 or tiredness < 70 or hunger < 70):
+            lines.append("")
+            lines.append("    Я чувствую, что мог бы иметь больше энергии, если бы...")
+            if hunger < 70 and mood < 70 and tiredness < 70:
+                lines.append("    ...поднял сытность, настроение и бодрость хотя бы до 70.")
+            elif hunger < 70 and mood < 70:
+                lines.append("    ...поднял сытность и настроение хотя бы до 70.")
+            elif hunger < 70 and tiredness < 70:
+                lines.append("    ...поднял сытность и бодрость хотя бы до 70.")
+            elif mood < 70 and tiredness < 70:
+                lines.append("    ...поднял настроение и бодрость хотя бы до 70.")
+            elif hunger < 70:
+                lines.append("    ...поднял сытность хотя бы до 70.")
+            elif mood < 70:
+                lines.append("    ...улучшил настроение хотя бы до 70.")
+            elif tiredness < 70:
+                lines.append("    ...восстановил силы и снизил усталость хотя бы до 70.")
+        else:
+            lines.append("    Никакие дополнительные ограничения не применялись.")
 
     return "\n".join(lines)
 
@@ -94,6 +120,7 @@ while running:
     if current_time - last_life_update >= 1:
         base_energy = hunger
         applied_rules = []
+        suggestion = ""
         life_energy = base_energy
 
         if (mood >= 70 and tiredness >= 70) and life_energy < 30:
@@ -103,6 +130,20 @@ while running:
         if (mood < 30 or tiredness < 30) and life_energy > 70:
             applied_rules.append("Настроение или бодрость плохие (< 30), не ощущаю подъёма — ограничиваю энергию сверху до 70.")
             life_energy = 70
+            if mood < 30 and tiredness < 30 and hunger < 70:
+                suggestion = "поднять сытность, настроение и бодрость хотя бы до 70."
+            elif mood < 30 and tiredness < 30:
+                suggestion = "поднять и настроение, и бодрость хотя бы до 70."
+            elif mood < 30 and hunger < 70:
+                suggestion = "поднять сытность и настроение хотя бы до 70."
+            elif tiredness < 30 and hunger < 70:
+                suggestion = "поднять сытность и бодрость хотя бы до 70."
+            elif mood < 30:
+                suggestion = "улучшить настроение хотя бы до 70."
+            elif tiredness < 30:
+                suggestion = "восстановить силы и снизить усталость хотя бы до 70."
+            elif hunger < 70:
+                suggestion = "повысить сытность хотя бы до 70."
 
         last_life_update = current_time
 
@@ -113,7 +154,7 @@ while running:
 
     # Область мыслей агента
     pygame.draw.rect(screen, GRAY, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
-    thought = get_thought(life_energy, hunger, mood, tiredness, base_energy, applied_rules)
+    thought = get_thought(life_energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion)
     thought_lines = thought.split("\n")
     for i, line in enumerate(thought_lines):
         text_surface = font.render(line, True, BLACK)
