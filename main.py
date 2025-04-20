@@ -73,19 +73,19 @@ def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, sug
             lines.append("    Что мне делать? Надо...")
             lines.append("    " + suggestion)
     else:
-        if energy < 70 and (mood < 70 or tiredness < 70 or hunger < 70):
+        if energy < 70 or hunger < 70:
             lines.append("")
             lines.append("    Я чувствую, что мог бы иметь больше энергии, если бы...")
             if hunger < 70 and mood < 70 and tiredness < 70:
-                lines.append("    ...поднял сытность, настроение и бодрость хотя бы до 70.")
+                lines.append("    ...поднял сытность до 100, настроение и бодрость хотя бы до 70.")
             elif hunger < 70 and mood < 70:
-                lines.append("    ...поднял сытность и настроение хотя бы до 70.")
+                lines.append("    ...поднял сытность до 100 и настроение хотя бы до 70.")
             elif hunger < 70 and tiredness < 70:
-                lines.append("    ...поднял сытность и бодрость хотя бы до 70.")
+                lines.append("    ...поднял сытность до 100 и бодрость хотя бы до 70.")
             elif mood < 70 and tiredness < 70:
                 lines.append("    ...поднял настроение и бодрость хотя бы до 70.")
-            elif hunger < 70:
-                lines.append("    ...поднял сытность хотя бы до 70.")
+            elif hunger < 100:
+                lines.append("    ...поднял сытность до 100.")
             elif mood < 70:
                 lines.append("    ...улучшил настроение хотя бы до 70.")
             elif tiredness < 70:
@@ -126,24 +126,26 @@ while running:
         if (mood >= 70 and tiredness >= 70) and life_energy < 30:
             applied_rules.append("Настроение и бодрость отличные (≥ 70), не позволяю опуститься ниже 30 — устанавливаю 30.")
             life_energy = 30
+            if hunger < 70:
+                suggestion = "повысить сытность до 100, чтобы жизненная энергия могла достичь 100."
 
         if (mood < 30 or tiredness < 30) and life_energy > 70:
             applied_rules.append("Настроение или бодрость плохие (< 30), не ощущаю подъёма — ограничиваю энергию сверху до 70.")
             life_energy = 70
             if mood < 30 and tiredness < 30 and hunger < 70:
-                suggestion = "поднять сытность, настроение и бодрость хотя бы до 70."
+                suggestion = "поднять сытность до 100, настроение и бодрость хотя бы до 70."
             elif mood < 30 and tiredness < 30:
                 suggestion = "поднять и настроение, и бодрость хотя бы до 70."
             elif mood < 30 and hunger < 70:
-                suggestion = "поднять сытность и настроение хотя бы до 70."
+                suggestion = "поднять сытность до 100 и настроение хотя бы до 70."
             elif tiredness < 30 and hunger < 70:
-                suggestion = "поднять сытность и бодрость хотя бы до 70."
+                suggestion = "поднять сытность до 100 и бодрость хотя бы до 70."
             elif mood < 30:
                 suggestion = "улучшить настроение хотя бы до 70."
             elif tiredness < 30:
                 suggestion = "восстановить силы и снизить усталость хотя бы до 70."
-            elif hunger < 70:
-                suggestion = "повысить сытность хотя бы до 70."
+            elif hunger < 100:
+                suggestion = "повысить сытность до 100."
 
         last_life_update = current_time
 
