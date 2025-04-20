@@ -1,27 +1,27 @@
 import os
-os.environ['SDL_VIDEO_WINDOW_POS'] = "1800,100"  # X=1600, Y=100 — правый край большого экрана
+os.environ['SDL_VIDEO_WINDOW_POS'] = "1800,100"
 
 import pygame
 import sys
 import time
 
-# Инициализация Pygame
 pygame.init()
 
-# Параметры экрана
 WIDTH, HEIGHT = 1600, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Симуляция агентов")
 
-# Цвета
 BACKGROUND_COLOR = (40, 44, 52)
+BACKGROUND_COLOR_DIALOG = "#8996AF"
 GRAY = (200, 200, 200)
 GREEN = (0, 200, 0)
 RED = (200, 0, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 150, 255)
+ORANGE = (255, 165, 0)
+MYBLUE = "#153777"
 
-# Настройки бегунков
 SLIDER_WIDTH = 300
 SLIDER_HEIGHT = 20
 SLIDER_X = 20
@@ -30,73 +30,131 @@ HUNGER_Y = HEIGHT // 2 - 40
 MOOD_Y = HEIGHT // 2 + 20
 TIRED_Y = HEIGHT // 2 + 80
 
-# Настройки области мыслей агента
 THOUGHT_BOX_X = SLIDER_X + SLIDER_WIDTH + 50
 THOUGHT_BOX_Y = LIFE_Y - 60
 THOUGHT_BOX_WIDTH = 1100
 THOUGHT_BOX_HEIGHT = 350
 
-# Начальные значения
 life_energy = 100
 hunger = 100
 mood = 100
 tiredness = 100
 base_energy = hunger
 applied_rules = []
-suggestion = ""
+suggestion = []
 last_life_update = time.time()
 
 font = pygame.font.SysFont(None, 24)
 
+
 def draw_slider(x, y, value, name):
-    pygame.draw.rect(screen, GRAY, (x, y, SLIDER_WIDTH, SLIDER_HEIGHT))
+    pygame.draw.rect(screen, BACKGROUND_COLOR_DIALOG, (x, y, SLIDER_WIDTH, SLIDER_HEIGHT))
     fill_width = int(SLIDER_WIDTH * (value / 100))
     pygame.draw.rect(screen, GREEN, (x, y, fill_width, SLIDER_HEIGHT))
     label = font.render(f"{name}: {int(value)}", True, WHITE)
     screen.blit(label, (x, y - 25))
 
-def generate_suggestion(hunger, mood, tiredness):
-    if hunger < 100 and mood < 30 and tiredness < 30:
-        return "поднять сытность до 100, настроение и бодрость хотя бы до 30.\n     Потому что если настроение и бодрость будут меньше 30,\n    то значение жизненной энергии не поднимается выше 70.[1]"
-    elif hunger < 100 and mood < 30:
-        return "поднять сытность до 100 и настроение хотя бы до 30.\n       Потому что если настроение будет меньше 30,\n       то значение жизненной энергии не поднимается выше 70.[2]"
-    elif hunger < 100 and tiredness < 30:
-        return "поднять сытность до 100 и бодрость хотя бы до 30. \n        Потому что если бодрость будет меньше 30,\n     то значение жизненной энергии не поднимается выше 70.[3]"
-    elif mood < 30 and tiredness < 30:
-        return "поднять настроение и бодрость хотя бы до 30. [4]"
-    elif hunger == 100 and mood < 30:
-        return "улучшить настроение хотя бы до 30. [6]"
-    elif hunger == 100 and tiredness < 30:
-        return "повысить бодрость хотя бы до 30. [7]"
-    elif hunger < 100:
-        return "поднять сытность до 100. [5]"
-    return ""
 
-def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
-    lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
-    lines.append("")
-    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, настроение — {int(mood)}, бодрость — {int(tiredness)}.")
-    lines.append("")
-    lines.append(f"    По умолчанию я рассчитываю свою жизненную энергию как {int(base_energy)} (на основе сытности).")
+def colorize_text(text):
+    keywords = {
+        "жизненную энергию": MYBLUE,
+        "жизненной энергии": MYBLUE,
+        "сытность": MYBLUE,
+        "сытности": MYBLUE,
+        "настроение": MYBLUE,
+        "бодрость": MYBLUE
+    }
+
+    text_lower = text.lower()
+    spans = []
+    used = [False] * len(text)
+
+    for phrase, color in keywords.items():
+        start = 0
+        phrase_lower = phrase.lower()
+        while True:
+            idx = text_lower.find(phrase_lower, start)
+            if idx == -1:
+                break
+            # mark used positions
+            if all(not used[i] for i in range(idx, idx + len(phrase))):
+                spans.append((idx, idx + len(phrase), color))
+                for i in range(idx, idx + len(phrase)):
+                    used[i] = True
+            start = idx + len(phrase)
+
+    spans.sort()
+    result = []
+    last_idx = 0
+
+    for start, end, color in spans:
+        if last_idx < start:
+            result.append((text[last_idx:start], BLACK))
+        result.append((text[start:end], color))
+        last_idx = end
+
+    if last_idx < len(text):
+        result.append((text[last_idx:], BLACK))
+
+    return result
+
+
+def generate_suggestion(hunger, mood, tiredness):
+    text = ""
+    if hunger < 100 and mood < 30 and tiredness < 30:
+        text = "поднять сытность до 100, настроение и бодрость хотя бы до 30."
+    elif hunger < 100 and mood < 30:
+        text = "поднять сытность до 100 и настроение хотя бы до 30."
+    elif hunger < 100 and tiredness < 30:
+        text = "поднять сытность до 100 и бодрость хотя бы до 30."
+    elif mood < 30 and tiredness < 30:
+        text = "поднять настроение и бодрость хотя бы до 30."
+    elif hunger == 100 and mood < 30:
+        text = "улучшить настроение хотя бы до 30."
+    elif hunger == 100 and tiredness < 30:
+        text = "повысить бодрость хотя бы до 30."
+    elif hunger < 100:
+        text = "поднять сытность до 100."
+    return [colorize_text(text)] if text else []
+
+
+def render_colored_line(x, y, parts):
+    offset_x = x
+    for text, color in parts:
+        surface = font.render(text, True, color)
+        screen.blit(surface, (offset_x, y))
+        offset_x += surface.get_width()
+
+
+def get_thought_lines(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
+    lines = [colorize_text("Фактическое значение жизненной энергии: {}".format(int(energy)))]
+    lines.append(("", BLACK))
+    lines.append(colorize_text("    Сейчас моя"))
+    lines.append(colorize_text("    сытность: {}  настроение: {}  бодрость: {}".format(int(hunger), int(mood), int(tiredness))))
+    lines.append(("", BLACK))
+    lines.append(colorize_text("    По умолчанию я рассчитываю свою жизненную энергию как {} (на основе сытности).".format(int(base_energy))))
 
     if applied_rules:
-        lines.append("    Однако...")
+        lines.append(colorize_text("    Однако..."))
         for rule in applied_rules:
-            lines.append("    " + rule)
+            lines.append(colorize_text("    " + rule))
         if suggestion:
-            lines.append("")
-            lines.append("    Что мне делать? Надо...")
-            lines.append("    " + suggestion)
+            lines.append(("", BLACK))
+            lines.append(colorize_text("    Что мне делать? Надо..."))
+            for part in suggestion:
+                lines.append(part)
     else:
         suggestion = generate_suggestion(hunger, mood, tiredness)
         if energy < 70 or hunger < 100 or (mood >= 70 and tiredness >= 70 and hunger < 100):
-            lines.append("")
-            lines.append("    Я чувствую, что мог бы иметь больше энергии, если бы...")
-            lines.append("    ..." + suggestion)
+            lines.append(("", BLACK))
+            lines.append(colorize_text("    Я чувствую, что мог бы иметь больше жизненной энергии, если бы..."))
+            for part in suggestion:
+                lines.append(part)
         else:
-            lines.append("    Никакие дополнительные ограничения не применялись.")
+            lines.append(colorize_text("    Никакие дополнительные ограничения не применялись."))
 
-    return "\n".join(lines)
+    return lines
+
 
 running = True
 clock = pygame.time.Clock()
@@ -121,7 +179,7 @@ while running:
     if current_time - last_life_update >= 1:
         base_energy = hunger
         applied_rules = []
-        suggestion = ""
+        suggestion = []
         life_energy = base_energy
 
         if (mood >= 70 and tiredness >= 70) and life_energy < 30:
@@ -142,12 +200,16 @@ while running:
     draw_slider(SLIDER_X, MOOD_Y, mood, "Настроение")
     draw_slider(SLIDER_X, TIRED_Y, tiredness, "Бодрость")
 
-    pygame.draw.rect(screen, GRAY, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
-    thought = get_thought(life_energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion)
-    thought_lines = thought.split("\n")
-    for i, line in enumerate(thought_lines):
-        text_surface = font.render(line, True, BLACK)
-        screen.blit(text_surface, (THOUGHT_BOX_X + 10, THOUGHT_BOX_Y + 10 + i * 25))
+    pygame.draw.rect(screen, BACKGROUND_COLOR_DIALOG, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
+    thought_lines = get_thought_lines(life_energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion)
+    y_offset = 0
+    for item in thought_lines:
+        if isinstance(item, list):
+            render_colored_line(THOUGHT_BOX_X + 10, THOUGHT_BOX_Y + 10 + y_offset, item)
+        else:
+            text_surface = font.render(item[0], True, item[1])
+            screen.blit(text_surface, (THOUGHT_BOX_X + 10, THOUGHT_BOX_Y + 10 + y_offset))
+        y_offset += 25
 
     pygame.display.flip()
     clock.tick(60)
