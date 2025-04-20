@@ -47,14 +47,12 @@ last_life_update = time.time()
 
 font = pygame.font.SysFont(None, 24)
 
-
 def draw_slider(x, y, value, name):
     pygame.draw.rect(screen, BACKGROUND_COLOR_DIALOG, (x, y, SLIDER_WIDTH, SLIDER_HEIGHT))
     fill_width = int(SLIDER_WIDTH * (value / 100))
     pygame.draw.rect(screen, GREEN, (x, y, fill_width, SLIDER_HEIGHT))
     label = font.render(f"{name}: {int(value)}", True, WHITE)
     screen.blit(label, (x, y - 25))
-
 
 def colorize_text(text):
     keywords = {
@@ -66,39 +64,43 @@ def colorize_text(text):
         "Бодрость": MYBLUE
     }
 
-    text_lower = text.lower()
-    spans = []
-    used = [False] * len(text)
+    lines = text.split('\n')
+    all_colored = []
 
-    for phrase, color in keywords.items():
-        start = 0
-        phrase_lower = phrase.lower()
-        while True:
-            idx = text_lower.find(phrase_lower, start)
-            if idx == -1:
-                break
-            # mark used positions
-            if all(not used[i] for i in range(idx, idx + len(phrase))):
-                spans.append((idx, idx + len(phrase), color))
-                for i in range(idx, idx + len(phrase)):
-                    used[i] = True
-            start = idx + len(phrase)
+    for line in lines:
+        text_lower = line.lower()
+        spans = []
+        used = [False] * len(line)
 
-    spans.sort()
-    result = []
-    last_idx = 0
+        for phrase, color in keywords.items():
+            start = 0
+            phrase_lower = phrase.lower()
+            while True:
+                idx = text_lower.find(phrase_lower, start)
+                if idx == -1:
+                    break
+                if all(not used[i] for i in range(idx, idx + len(phrase))):
+                    spans.append((idx, idx + len(phrase), color))
+                    for i in range(idx, idx + len(phrase)):
+                        used[i] = True
+                start = idx + len(phrase)
 
-    for start, end, color in spans:
-        if last_idx < start:
-            result.append((text[last_idx:start], BLACK))
-        result.append((text[start:end], color))
-        last_idx = end
+        spans.sort()
+        result = []
+        last_idx = 0
 
-    if last_idx < len(text):
-        result.append((text[last_idx:], BLACK))
+        for start, end, color in spans:
+            if last_idx < start:
+                result.append((line[last_idx:start], BLACK))
+            result.append((line[start:end], color))
+            last_idx = end
 
-    return result
+        if last_idx < len(line):
+            result.append((line[last_idx:], BLACK))
 
+        all_colored.append(result)
+
+    return all_colored if len(all_colored) > 1 else all_colored[0]
 
 def generate_suggestion(hunger, mood, tiredness):
     text = ""
@@ -116,8 +118,7 @@ def generate_suggestion(hunger, mood, tiredness):
         text = "    повысить Бодрость хотя бы до 30. [7]"
     elif hunger < 100:
         text = "    поднять Сытность до 100. [5]"
-    return [colorize_text(text)] if text else []
-
+    return colorize_text(text) if text else []
 
 def render_colored_line(x, y, parts):
     offset_x = x
@@ -125,7 +126,6 @@ def render_colored_line(x, y, parts):
         surface = font.render(text, True, color)
         screen.blit(surface, (offset_x, y))
         offset_x += surface.get_width()
-
 
 def get_thought_lines(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
     lines = [colorize_text("Фактическое значение Жизненной Энергии: {}".format(int(energy)))]
@@ -143,19 +143,24 @@ def get_thought_lines(energy, hunger, mood, tiredness, base_energy, applied_rule
             lines.append(("", BLACK))
             lines.append(colorize_text("    Что мне делать? Надо..."))
             for part in suggestion:
-                lines.append(part)
+                if isinstance(part, list):
+                    lines.append(part)
+                else:
+                    lines.append([part])
     else:
         suggestion = generate_suggestion(hunger, mood, tiredness)
         if energy < 70 or hunger < 100 or (mood >= 70 and tiredness >= 70 and hunger < 100):
             lines.append(("", BLACK))
             lines.append(colorize_text("    Я чувствую, что мог бы иметь больше Жизненной Энергии, если бы я попробовал:"))
             for part in suggestion:
-                lines.append(part)
+                if isinstance(part, list):
+                    lines.append(part)
+                else:
+                    lines.append([part])
         else:
             lines.append(colorize_text("    Никакие дополнительные ограничения не применялись."))
 
     return lines
-
 
 running = True
 clock = pygame.time.Clock()
