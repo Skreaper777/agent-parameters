@@ -48,7 +48,6 @@ last_life_update = time.time()
 
 font = pygame.font.SysFont(None, 24)
 
-
 def draw_slider(x, y, value, name):
     pygame.draw.rect(screen, GRAY, (x, y, SLIDER_WIDTH, SLIDER_HEIGHT))
     fill_width = int(SLIDER_WIDTH * (value / 100))
@@ -56,6 +55,22 @@ def draw_slider(x, y, value, name):
     label = font.render(f"{name}: {int(value)}", True, WHITE)
     screen.blit(label, (x, y - 25))
 
+def generate_suggestion(hunger, mood, tiredness):
+    if hunger < 100 and mood < 30 and tiredness < 30:
+        return "поднять сытность до 100, настроение и бодрость хотя бы до 30.\n     Потому что если настроение и бодрость будут меньше 30,\n    то значение жизненной энергии не поднимается выше 70.[1]"
+    elif hunger < 100 and mood < 30:
+        return "поднять сытность до 100 и настроение хотя бы до 30.\n       Потому что если настроение будет меньше 30,\n       то значение жизненной энергии не поднимается выше 70.[2]"
+    elif hunger < 100 and tiredness < 30:
+        return "поднять сытность до 100 и бодрость хотя бы до 30. \n        Потому что если бодрость будет меньше 30,\n     то значение жизненной энергии не поднимается выше 70.[3]"
+    elif mood < 30 and tiredness < 30:
+        return "поднять настроение и бодрость хотя бы до 30. [4]"
+    elif hunger == 100 and mood < 30:
+        return "улучшить настроение хотя бы до 30. [6]"
+    elif hunger == 100 and tiredness < 30:
+        return "повысить бодрость хотя бы до 30. [7]"
+    elif hunger < 100:
+        return "поднять сытность до 100. [5]"
+    return ""
 
 def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
     lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
@@ -73,28 +88,15 @@ def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, sug
             lines.append("    Что мне делать? Надо...")
             lines.append("    " + suggestion)
     else:
+        suggestion = generate_suggestion(hunger, mood, tiredness)
         if energy < 70 or hunger < 100 or (mood >= 70 and tiredness >= 70 and hunger < 100):
             lines.append("")
             lines.append("    Я чувствую, что мог бы иметь больше энергии, если бы...")
-            if hunger < 70 and mood < 70 and tiredness < 70:
-                lines.append("    ...поднял сытность до 100, настроение и бодрость хотя бы до 70.")
-            elif hunger < 70 and mood < 70:
-                lines.append("    ...поднял сытность до 100 и настроение хотя бы до 70.")
-            elif hunger < 70 and tiredness < 70:
-                lines.append("    ...поднял сытность до 100 и бодрость хотя бы до 70.")
-            elif mood < 70 and tiredness < 70:
-                lines.append("    ...поднял настроение и бодрость хотя бы до 70.")
-            elif hunger < 100:
-                lines.append("    ...поднял сытность до 100.")
-            elif mood < 70:
-                lines.append("    ...улучшил настроение хотя бы до 70.")
-            elif tiredness < 70:
-                lines.append("    ...восстановил силы и снизил бодрость хотя бы до 70.")
+            lines.append("    ..." + suggestion)
         else:
             lines.append("    Никакие дополнительные ограничения не применялись.")
 
     return "\n".join(lines)
-
 
 running = True
 clock = pygame.time.Clock()
@@ -115,7 +117,6 @@ while running:
             if TIRED_Y <= my <= TIRED_Y + SLIDER_HEIGHT and SLIDER_X <= mx <= SLIDER_X + SLIDER_WIDTH:
                 tiredness = (mx - SLIDER_X) / SLIDER_WIDTH * 100
 
-    # Обновление жизненной энергии каждую 1 секунду
     current_time = time.time()
     if current_time - last_life_update >= 1:
         base_energy = hunger
@@ -126,26 +127,13 @@ while running:
         if (mood >= 70 and tiredness >= 70) and life_energy < 30:
             applied_rules.append("Настроение и бодрость отличные (≥ 70), не позволяю опуститься ниже 30 — устанавливаю 30.")
             life_energy = 30
-            if hunger < 70:
-                suggestion = "повысить сытность до 100, чтобы жизненная энергия могла достичь 100."
+            if hunger < 100:
+                suggestion = generate_suggestion(hunger, mood, tiredness)
 
         if (mood < 30 or tiredness < 30) and life_energy > 70:
             applied_rules.append("Настроение или бодрость плохие (< 30), не ощущаю подъёма — ограничиваю энергию сверху до 70.")
             life_energy = 70
-            if mood < 30 and tiredness < 30 and hunger < 70:
-                suggestion = "поднять сытность до 100, настроение и бодрость хотя бы до 70."
-            elif mood < 30 and tiredness < 30:
-                suggestion = "поднять и настроение, и бодрость хотя бы до 70."
-            elif mood < 30 and hunger < 70:
-                suggestion = "поднять сытность до 100 и настроение хотя бы до 70."
-            elif tiredness < 30 and hunger < 70:
-                suggestion = "поднять сытность до 100 и бодрость хотя бы до 70."
-            elif mood < 30:
-                suggestion = "улучшить настроение хотя бы до 70."
-            elif tiredness < 30:
-                suggestion = "повысить бодрость хотя бы до 70."
-            elif hunger < 100:
-                suggestion = "повысить сытность до 100."
+            suggestion = generate_suggestion(hunger, mood, tiredness)
 
         last_life_update = current_time
 
@@ -154,7 +142,6 @@ while running:
     draw_slider(SLIDER_X, MOOD_Y, mood, "Настроение")
     draw_slider(SLIDER_X, TIRED_Y, tiredness, "Бодрость")
 
-    # Область мыслей агента
     pygame.draw.rect(screen, GRAY, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
     thought = get_thought(life_energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion)
     thought_lines = thought.split("\n")
