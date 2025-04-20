@@ -6,7 +6,7 @@ import time
 pygame.init()
 
 # Параметры экрана
-WIDTH, HEIGHT = 1600, 600
+WIDTH, HEIGHT = 1600, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Симуляция агентов")
 
@@ -22,20 +22,22 @@ WHITE = (255, 255, 255)
 SLIDER_WIDTH = 300
 SLIDER_HEIGHT = 20
 SLIDER_X = 20
-LIFE_Y = HEIGHT // 2 - 80
-HUNGER_Y = HEIGHT // 2 - 20
-MOOD_Y = HEIGHT // 2 + 40
+LIFE_Y = HEIGHT // 2 - 100
+HUNGER_Y = HEIGHT // 2 - 40
+MOOD_Y = HEIGHT // 2 + 20
+TIRED_Y = HEIGHT // 2 + 80
 
 # Настройки области мыслей агента
 THOUGHT_BOX_X = SLIDER_X + SLIDER_WIDTH + 50
 THOUGHT_BOX_Y = LIFE_Y - 60
 THOUGHT_BOX_WIDTH = 1100
-THOUGHT_BOX_HEIGHT = 300
+THOUGHT_BOX_HEIGHT = 350
 
 # Начальные значения
 life_energy = 100
 hunger = 100
 mood = 100
+tiredness = 100
 base_energy = hunger
 applied_rules = []
 last_life_update = time.time()
@@ -51,10 +53,10 @@ def draw_slider(x, y, value, name):
     screen.blit(label, (x, y - 25))
 
 
-def get_thought(energy, hunger, mood, base_energy, applied_rules):
+def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules):
     lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
     lines.append("")
-    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, а настроение — {int(mood)}.")
+    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, настроение — {int(mood)}, усталость — {int(tiredness)}.")
     lines.append("")
     lines.append(f"    По умолчанию я рассчитываю свою жизненную энергию как {int(base_energy)} (на основе сытности).")
 
@@ -84,6 +86,8 @@ while running:
                 hunger = (mx - SLIDER_X) / SLIDER_WIDTH * 100
             if MOOD_Y <= my <= MOOD_Y + SLIDER_HEIGHT and SLIDER_X <= mx <= SLIDER_X + SLIDER_WIDTH:
                 mood = (mx - SLIDER_X) / SLIDER_WIDTH * 100
+            if TIRED_Y <= my <= TIRED_Y + SLIDER_HEIGHT and SLIDER_X <= mx <= SLIDER_X + SLIDER_WIDTH:
+                tiredness = (mx - SLIDER_X) / SLIDER_WIDTH * 100
 
     # Обновление жизненной энергии каждую 1 секунду
     current_time = time.time()
@@ -92,12 +96,12 @@ while running:
         applied_rules = []
         life_energy = base_energy
 
-        if mood >= 70 and life_energy < 30:
-            applied_rules.append("Настроение отличное (≥ 70), и я не позволяю себе опуститься ниже 30 — поэтому поднимаю энергию до 30.")
+        if (mood >= 70 and tiredness >= 70) and life_energy < 30:
+            applied_rules.append("Настроение и бодрость отличные (≥ 70), не позволяю опуститься ниже 30 — устанавливаю 30.")
             life_energy = 30
 
-        if mood < 30 and life_energy > 70:
-            applied_rules.append("Настроение плохое (< 30), и я не ощущаю подъёма — поэтому ограничиваю энергию сверху до 70.")
+        if (mood < 30 or tiredness < 30) and life_energy > 70:
+            applied_rules.append("Настроение или бодрость плохие (< 30), не ощущаю подъёма — ограничиваю энергию сверху до 70.")
             life_energy = 70
 
         last_life_update = current_time
@@ -105,10 +109,11 @@ while running:
     draw_slider(SLIDER_X, LIFE_Y, life_energy, "Жизненная энергия")
     draw_slider(SLIDER_X, HUNGER_Y, hunger, "Сытность")
     draw_slider(SLIDER_X, MOOD_Y, mood, "Настроение")
+    draw_slider(SLIDER_X, TIRED_Y, tiredness, "Усталость")
 
     # Область мыслей агента
     pygame.draw.rect(screen, GRAY, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
-    thought = get_thought(life_energy, hunger, mood, base_energy, applied_rules)
+    thought = get_thought(life_energy, hunger, mood, tiredness, base_energy, applied_rules)
     thought_lines = thought.split("\n")
     for i, line in enumerate(thought_lines):
         text_surface = font.render(line, True, BLACK)
