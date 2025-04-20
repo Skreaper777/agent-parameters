@@ -58,12 +58,12 @@ def draw_slider(x, y, value, name):
 
 def colorize_text(text):
     keywords = {
-        "жизненную энергию": MYGREEN,
-        "жизненной энергии": MYGREEN,
-        "сытность": MYBLUE,
-        "сытности": MYBLUE,
-        "настроение": MYBLUE,
-        "бодрость": MYBLUE
+        "Жизненную Энергию": MYGREEN,
+        "Жизненной Энергии": MYGREEN,
+        "Сытность": MYBLUE,
+        "Сытности": MYBLUE,
+        "Настроение": MYBLUE,
+        "Бодрость": MYBLUE
     }
 
     text_lower = text.lower()
@@ -103,19 +103,19 @@ def colorize_text(text):
 def generate_suggestion(hunger, mood, tiredness):
     text = ""
     if hunger < 100 and mood < 30 and tiredness < 30:
-        text = "    поднять сытность до 100, настроение и бодрость хотя бы до 30.\n     Потому что если настроение и бодрость будут меньше 30,\n    то значение жизненной энергии не поднимается выше 70.[1]"
+        text = "    поднять Сытность до 100, Настроение и Бодрость хотя бы до 30.\n     Потому что если Настроение и Бодрость будут меньше 30,\n    то значение Жизненной Энергии не поднимается выше 70.[1]"
     elif hunger < 100 and mood < 30:
-        text = "    поднять сытность до 100 и настроение хотя бы до 30.\n       Потому что если настроение будет меньше 30,\n       то значение жизненной энергии не поднимается выше 70.[2]"
+        text = "    поднять Сытность до 100 и Настроение хотя бы до 30.\n       Потому что если Настроение будет меньше 30,\n       то значение Жизненной Энергии не поднимается выше 70.[2]"
     elif hunger < 100 and tiredness < 30:
-        text = "    поднять сытность до 100 и бодрость хотя бы до 30. \n        Потому что если бодрость будет меньше 30,\n     то значение жизненной энергии не поднимается выше 70.[3]"
+        text = "    поднять Сытность до 100 и Бодрость хотя бы до 30. \n        Потому что если Бодрость будет меньше 30,\n     то значение Жизненной Энергии не поднимается выше 70.[3]"
     elif mood < 30 and tiredness < 30:
-        text = "    поднять настроение и бодрость хотя бы до 30. [4]"
+        text = "    поднять Настроение и Бодрость хотя бы до 30. [4]"
     elif hunger == 100 and mood < 30:
-        text = "    улучшить настроение хотя бы до 30. [6]"
+        text = "    улучшить Настроение хотя бы до 30. [6]"
     elif hunger == 100 and tiredness < 30:
-        text = "    повысить бодрость хотя бы до 30. [7]"
+        text = "    повысить Бодрость хотя бы до 30. [7]"
     elif hunger < 100:
-        text = "    поднять сытность до 100. [5]"
+        text = "    поднять Сытность до 100. [5]"
     return [colorize_text(text)] if text else []
 
 
@@ -128,12 +128,12 @@ def render_colored_line(x, y, parts):
 
 
 def get_thought_lines(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
-    lines = [colorize_text("Фактическое значение жизненной энергии: {}".format(int(energy)))]
+    lines = [colorize_text("Фактическое значение Жизненной Энергии: {}".format(int(energy)))]
     lines.append(("", BLACK))
     lines.append(colorize_text("    Сейчас моя"))
-    lines.append(colorize_text("    сытность: {}  настроение: {}  бодрость: {}".format(int(hunger), int(mood), int(tiredness))))
+    lines.append(colorize_text("    Сытность: {}  Настроение: {}  Бодрость: {}".format(int(hunger), int(mood), int(tiredness))))
     lines.append(("", BLACK))
-    lines.append(colorize_text("    По умолчанию я рассчитываю свою жизненную энергию как {} (на основе сытности).".format(int(base_energy))))
+    lines.append(colorize_text("    По умолчанию я рассчитываю свою Жизненную Энергию как {} (на основе Сытности).".format(int(base_energy))))
 
     if applied_rules:
         lines.append(colorize_text("    Однако..."))
@@ -148,7 +148,7 @@ def get_thought_lines(energy, hunger, mood, tiredness, base_energy, applied_rule
         suggestion = generate_suggestion(hunger, mood, tiredness)
         if energy < 70 or hunger < 100 or (mood >= 70 and tiredness >= 70 and hunger < 100):
             lines.append(("", BLACK))
-            lines.append(colorize_text("    Я чувствую, что мог бы иметь больше жизненной энергии, если бы я попробовал:"))
+            lines.append(colorize_text("    Я чувствую, что мог бы иметь больше Жизненной Энергии, если бы я попробовал:"))
             for part in suggestion:
                 lines.append(part)
         else:
@@ -184,13 +184,13 @@ while running:
         life_energy = base_energy
 
         if (mood >= 70 and tiredness >= 70) and life_energy < 30:
-            applied_rules.append("Настроение и бодрость отличные (≥ 70), не позволяю опуститься ниже 30 — устанавливаю 30.")
+            applied_rules.append("Настроение и Бодрость отличные (≥ 70), не позволяю опуститься Жизненной Энергии ниже 30 — устанавливаю 30. [2.1]")
             life_energy = 30
             if hunger < 100:
                 suggestion = generate_suggestion(hunger, mood, tiredness)
 
         if (mood < 30 or tiredness < 30) and life_energy > 70:
-            applied_rules.append("Настроение или бодрость плохие (< 30), не ощущаю подъёма — ограничиваю энергию сверху до 70.")
+            applied_rules.append("Настроение или Бодрость плохие (< 30), не ощущаю подъёма — ограничиваю Жизненную Энергию сверху до 70. [2.2]")
             life_energy = 70
             suggestion = generate_suggestion(hunger, mood, tiredness)
 
