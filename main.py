@@ -60,7 +60,7 @@ def draw_slider(x, y, value, name):
 def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, suggestion):
     lines = [f"Фактическое значение жизненной энергии: {int(energy)}"]
     lines.append("")
-    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, настроение — {int(mood)}, усталость — {int(tiredness)}.")
+    lines.append(f"    Сейчас моя сытность составляет {int(hunger)}, настроение — {int(mood)}, бодрость — {int(tiredness)}.")
     lines.append("")
     lines.append(f"    По умолчанию я рассчитываю свою жизненную энергию как {int(base_energy)} (на основе сытности).")
 
@@ -73,7 +73,7 @@ def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, sug
             lines.append("    Что мне делать? Надо...")
             lines.append("    " + suggestion)
     else:
-        if energy < 70 or hunger < 70:
+        if energy < 70 or hunger < 100 or (mood >= 70 and tiredness >= 70 and hunger < 100):
             lines.append("")
             lines.append("    Я чувствую, что мог бы иметь больше энергии, если бы...")
             if hunger < 70 and mood < 70 and tiredness < 70:
@@ -89,7 +89,7 @@ def get_thought(energy, hunger, mood, tiredness, base_energy, applied_rules, sug
             elif mood < 70:
                 lines.append("    ...улучшил настроение хотя бы до 70.")
             elif tiredness < 70:
-                lines.append("    ...восстановил силы и снизил усталость хотя бы до 70.")
+                lines.append("    ...восстановил силы и снизил бодрость хотя бы до 70.")
         else:
             lines.append("    Никакие дополнительные ограничения не применялись.")
 
@@ -143,7 +143,7 @@ while running:
             elif mood < 30:
                 suggestion = "улучшить настроение хотя бы до 70."
             elif tiredness < 30:
-                suggestion = "восстановить силы и снизить усталость хотя бы до 70."
+                suggestion = "повысить бодрость хотя бы до 70."
             elif hunger < 100:
                 suggestion = "повысить сытность до 100."
 
@@ -152,7 +152,7 @@ while running:
     draw_slider(SLIDER_X, LIFE_Y, life_energy, "Жизненная энергия")
     draw_slider(SLIDER_X, HUNGER_Y, hunger, "Сытность")
     draw_slider(SLIDER_X, MOOD_Y, mood, "Настроение")
-    draw_slider(SLIDER_X, TIRED_Y, tiredness, "Усталость")
+    draw_slider(SLIDER_X, TIRED_Y, tiredness, "Бодрость")
 
     # Область мыслей агента
     pygame.draw.rect(screen, GRAY, (THOUGHT_BOX_X, THOUGHT_BOX_Y, THOUGHT_BOX_WIDTH, THOUGHT_BOX_HEIGHT), border_radius=8)
